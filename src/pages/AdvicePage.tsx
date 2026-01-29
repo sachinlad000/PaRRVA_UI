@@ -4,7 +4,6 @@ import { ArrowLeft, Send, Loader2, CheckCircle, AlertCircle, Plus, Trash2 } from
 import { useAuthStore, ADVICE_TYPES } from '../stores/authStore';
 import { useConfigStore } from '../stores/configStore';
 import { prepareEncryptedPayload } from '../lib/crypto/jwe';
-import { ENDPOINTS } from '../lib/postman/endpoints';
 import { AppLayout } from '../components/layout/AppLayout';
 
 interface FormField {
@@ -149,7 +148,7 @@ export function AdvicePage() {
     const navigate = useNavigate();
     const { adviceType } = useParams<{ adviceType: string }>();
     const { token, role, addSubmission } = useAuthStore();
-    const { dataPublicKey, dataBaseUrl } = useConfigStore();
+    const { dataPublicKey } = useConfigStore();
 
     const [items, setItems] = useState<Record<string, string | number>[]>([{}]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -190,21 +189,19 @@ export function AdvicePage() {
         setSubmitResult(null);
 
         try {
-            // Find the matching endpoint
-            const endpoint = ENDPOINTS.find(ep => ep.id.includes(adviceType!) && ep.category === role?.toLowerCase());
-            const path = endpoint?.path || `/api/parrva/pdc/${role?.toLowerCase()}/${adviceType}`;
-            const url = `${dataBaseUrl}${path}`;
+            // Build proxy path: /api/nse/{role}/{adviceType}
+            const proxyPath = `/api/nse/${role?.toLowerCase()}/${adviceType}`;
 
             // Prepare encrypted payload
             const payload = formConfig.isArray ? items : items[0];
             const encryptedPayload = await prepareEncryptedPayload(payload, dataPublicKey, formConfig.isArray ? 'array' : 'object');
 
-            console.log('Sending advice to:', url);
+            console.log('Sending advice to proxy:', proxyPath);
             console.log('Payload:', payload);
             console.log('Encrypted payload:', encryptedPayload);
 
-            // Submit to NSE
-            const response = await fetch(url, {
+            // Submit via proxy
+            const response = await fetch(proxyPath, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -231,25 +228,20 @@ export function AdvicePage() {
                     setSubmitResult(null);
                 }, 3000);
             } else {
-                throw new Error(data.message || `Submission failed (Status: ${response.status})`);
+                throw new Error(data.message || data.error || `Submission failed (Status: ${response.status})`);
             }
         } catch (err) {
             console.error('Submission error:', err);
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
 
-            let displayError = errorMessage;
-            if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-                displayError = 'Unable to connect to NSE server. This may be due to CORS restrictions or network issues.';
-            }
-
-            setSubmitResult({ success: false, message: displayError });
+            setSubmitResult({ success: false, message: errorMessage });
             addSubmission({
                 id: Date.now().toString(),
                 adviceType: adviceType!,
                 adviceName: formConfig.title,
                 timestamp: Date.now(),
                 status: 'error',
-                message: displayError,
+                message: errorMessage,
             });
         } finally {
             setIsSubmitting(false);
@@ -353,11 +345,6 @@ export function AdvicePage() {
                             <span>{submitResult.message}</span>
                         </div>
                     )}
-
-                    {/* API Endpoint Info */}
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
-                        <p><strong>API:</strong> {dataBaseUrl}/api/parrva/pdc/{role?.toLowerCase()}/{adviceType}</p>
-                    </div>
 
                     {/* Submit Button */}
                     <button

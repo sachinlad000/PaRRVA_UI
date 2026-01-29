@@ -15,7 +15,7 @@ export function LoginForm() {
     const [error, setError] = useState<string | null>(null);
 
     const { setAuth } = useAuthStore();
-    const { authPublicKey, authBaseUrl } = useConfigStore();
+    const { authPublicKey } = useConfigStore();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,11 +27,12 @@ export function LoginForm() {
             const payload = { username, password, role };
             const encryptedPayload = await prepareEncryptedPayload(payload, authPublicKey, 'object');
 
-            console.log('Sending auth request to:', `${authBaseUrl}/api/parrva/pdc/auth/authenticate`);
+            // Call auth API via proxy
+            const proxyUrl = '/api/auth/authenticate';
+            console.log('Sending auth request to proxy:', proxyUrl);
             console.log('Encrypted payload:', encryptedPayload);
 
-            // Call auth API
-            const response = await fetch(`${authBaseUrl}/api/parrva/pdc/auth/authenticate`, {
+            const response = await fetch(proxyUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(encryptedPayload),
@@ -44,18 +45,12 @@ export function LoginForm() {
                 setAuth(data.token, role, username);
                 navigate('/dashboard');
             } else {
-                setError(data.message || `Authentication failed (Status: ${response.status})`);
+                setError(data.message || data.error || `Authentication failed (Status: ${response.status})`);
             }
         } catch (err) {
             console.error('Auth error:', err);
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-
-            // Check for CORS or network errors
-            if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-                setError('Unable to connect to server. This may be due to CORS restrictions or network issues. Please check browser console for details.');
-            } else {
-                setError(`Connection error: ${errorMessage}`);
-            }
+            setError(`Connection error: ${errorMessage}`);
         } finally {
             setIsLoading(false);
         }
@@ -170,11 +165,6 @@ export function LoginForm() {
                             )}
                         </button>
                     </form>
-
-                    {/* API Info */}
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
-                        <p><strong>Auth API:</strong> {authBaseUrl}</p>
-                    </div>
                 </div>
 
                 {/* Footer */}
