@@ -13,19 +13,40 @@ export async function onRequestPost(context) {
         const pathParts = params.path;
 
         // Path format: /api/nse/{role}/{adviceType}
-        // e.g., /api/nse/ra/strategy -> https://clientprofilinguat.nseindia.com/api/advice/iainput/strategy
-        const adviceType = pathParts[pathParts.length - 1]; // Get last part (strategy, singlestock, etc.)
+        const role = pathParts[pathParts.length - 2]?.toLowerCase();
+        const adviceType = pathParts[pathParts.length - 1]?.toLowerCase();
 
-        const targetUrl = `${NSE_BASE_URL}/${adviceType}`;
+        // Determine base path (iainput vs rainput) based on Postman collection
+        let inputType = 'iainput'; // Default
+
+        if (adviceType === 'portfolio') {
+            inputType = 'rainput';
+        } else if (adviceType === 'intraday' || adviceType === 'derivative') {
+            inputType = (role === 'ra') ? 'rainput' : 'iainput';
+        } else if (adviceType === 'strategy' || adviceType === 'singlestock') {
+            inputType = 'iainput';
+        }
+
+        // Construct target URL
+        let targetUrl;
+        if (adviceType === 'algoinput') {
+            targetUrl = `https://clientprofilinguat.nseindia.com/api/advice/algoinput`;
+        } else {
+            targetUrl = `https://clientprofilinguat.nseindia.com/api/advice/${inputType}/${adviceType}`;
+        }
 
         console.log('Proxying NSE request to:', targetUrl);
 
         // Get authorization header from request
         const authHeader = request.headers.get('Authorization');
 
-        // Forward to NSE API
+        // Forward to NSE API with requested headers
         const headers = {
             'Content-Type': 'application/json',
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'User-Agent': 'PostmanRuntime/7.32.3'
         };
 
         if (authHeader) {

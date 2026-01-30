@@ -13,6 +13,7 @@ export function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [debugInfo, setDebugInfo] = useState<{ plainText: string; encrypted: string } | null>(null);
 
     const { setAuth } = useAuthStore();
     const { authPublicKey } = useConfigStore();
@@ -21,14 +22,22 @@ export function LoginForm() {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
+        setDebugInfo(null);
 
         try {
             // Prepare encrypted payload
             const payload = { username, password, role };
             const encryptedPayload = await prepareEncryptedPayload(payload, authPublicKey, 'object');
 
+            // Store debug info
+            setDebugInfo({
+                plainText: JSON.stringify(payload, null, 2),
+                encrypted: JSON.stringify(encryptedPayload, null, 2)
+            });
+
             // Call auth API via proxy
             const proxyUrl = '/api/auth/authenticate';
+            console.log('Plain text payload:', payload);
             console.log('Sending auth request to proxy:', proxyUrl);
             console.log('Encrypted payload:', encryptedPayload);
 
@@ -41,11 +50,32 @@ export function LoginForm() {
             const data = await response.json();
             console.log('Auth response:', response.status, data);
 
-            if (response.ok && data.token) {
-                setAuth(data.token, role, username);
+            // Check for JWE in response - this is the token for subsequent calls
+            // Response can be { data: "jwe" } or { jwe: "..." } or { token: "..." }
+            // IMPORTANT: Must be a non-empty string (not empty object {})
+            const possibleToken = data.data.jwe;
+            const jweToken = typeof possibleToken === 'string' && possibleToken.length > 0 ? possibleToken : null;
+
+            // Check for status field - must be "success" to proceed
+            const statusValue = data.status?.toLowerCase?.() || '';
+            const isStatusSuccess = statusValue === 'success';
+
+            // Check for error messages in response
+            const hasError = data.messages && data.messages.length > 0;
+            const errorMessage = hasError
+                ? data.messages.map((m: { errcode?: string; message?: string }) => m.message || m.errcode || 'Error').join(', ')
+                : data.message || data.error;
+
+            console.log('Auth check - status:', data.status, 'isSuccess:', isStatusSuccess, 'hasToken:', !!jweToken);
+
+            if (isStatusSuccess && jweToken && !hasError) {
+                console.log('Auth successful! Status is success and JWE token received');
+                setAuth(jweToken, role, username);
                 navigate('/dashboard');
             } else {
-                setError(data.message || data.error || `Authentication failed (Status: ${response.status})`);
+                console.error('Auth failed - status:', data.status, 'hasToken:', !!jweToken, 'hasError:', hasError);
+                const errorMsg = errorMessage || (!isStatusSuccess ? `Authentication failed: Status is "${data.status || 'missing'}"` : 'Authentication failed');
+                setError(errorMsg);
             }
         } catch (err) {
             console.error('Auth error:', err);
@@ -120,8 +150,8 @@ export function LoginForm() {
                                     <label
                                         key={option.value}
                                         className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all ${role === option.value
-                                                ? 'border-blue-500 bg-blue-50'
-                                                : 'border-gray-200 hover:border-gray-300'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                     >
                                         <input
@@ -166,6 +196,20 @@ export function LoginForm() {
                         </button>
                     </form>
                 </div>
+
+                {/* Debug Info */}
+                {debugInfo && (
+                    <div className="mt-4 space-y-3">
+                        <div className="card p-4">
+                            <h3 className="font-semibold text-gray-700 mb-2">📝 Plain Text Body:</h3>
+                            <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto text-gray-800">{debugInfo.plainText}</pre>
+                        </div>
+                        <div className="card p-4">
+                            <h3 className="font-semibold text-gray-700 mb-2">🔐 Encrypted Payload:</h3>
+                            <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto text-gray-800 max-h-32 overflow-y-auto">{debugInfo.encrypted}</pre>
+                        </div>
+                    </div>
+                )}
 
                 {/* Footer */}
                 <p className="text-center text-sm text-gray-500 mt-6">

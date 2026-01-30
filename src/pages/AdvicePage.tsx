@@ -16,133 +16,245 @@ interface FormField {
     options?: { value: string; label: string }[];
 }
 
-const ADVICE_FORMS: Record<string, { title: string; description: string; fields: FormField[]; isArray: boolean }> = {
+interface NestedFormConfig {
+    title: string;
+    description: string;
+    isArray: boolean;
+    hasNestedArray?: boolean;
+    nestedArrayName?: string;
+    mainFields: FormField[];
+    nestedFields?: FormField[];
+}
+
+const ADVICE_FORMS: Record<string, NestedFormConfig> = {
     strategy: {
         title: 'Strategy Advice',
-        description: 'Submit investment strategy recommendations to NSE',
+        description: 'Submit derivative strategy recommendations to NSE',
         isArray: true,
-        fields: [
-            { name: 'pan', label: 'Client PAN', type: 'text', required: true, placeholder: 'ABCDE1234F', hint: '10-character PAN number' },
-            { name: 'isin', label: 'ISIN', type: 'text', required: true, placeholder: 'INE123456789' },
+        hasNestedArray: true,
+        nestedArrayName: 'strategyDetails',
+        mainFields: [
+            { name: 'adviceName', label: 'Advice Name', type: 'text', required: true, placeholder: 'e.g., Nifty09Jan23600PE' },
             {
-                name: 'strategyAdvice', label: 'Strategy', type: 'select', required: true, options: [
-                    { value: 'BUY', label: 'Buy' },
-                    { value: 'SELL', label: 'Sell' },
-                    { value: 'HOLD', label: 'Hold' },
+                name: 'exchange', label: 'Exchange', type: 'select', required: true, options: [
+                    { value: 'NSE', label: 'NSE' },
+                    { value: 'BSE', label: 'BSE' },
                 ]
             },
-            { name: 'quantity', label: 'Quantity', type: 'number', required: true, placeholder: 'Enter quantity' },
-            { name: 'price', label: 'Target Price (₹)', type: 'number', required: true, placeholder: 'Enter target price' },
-            { name: 'adviceDate', label: 'Advice Date', type: 'date', required: true },
-            { name: 'validTill', label: 'Valid Till', type: 'date', required: true },
-            { name: 'remarks', label: 'Remarks', type: 'text', placeholder: 'Optional remarks' },
+            {
+                name: 'strategyName', label: 'Strategy Name', type: 'select', required: true, options: [
+                    { value: 'LONG', label: 'Long' },
+                    { value: 'SHORT', label: 'Short' },
+                    { value: 'STRADDLE', label: 'Straddle' },
+                    { value: 'STRANGLE', label: 'Strangle' },
+                ]
+            },
+            {
+                name: 'isIntraday', label: 'Is Intraday?', type: 'select', required: true, options: [
+                    { value: 'yes', label: 'Yes' },
+                    { value: 'no', label: 'No' },
+                ]
+            },
+        ],
+        nestedFields: [
+            {
+                name: 'recommendationType', label: 'Recommendation', type: 'select', required: true, options: [
+                    { value: 'BUY', label: 'Buy' },
+                    { value: 'SELL', label: 'Sell' },
+                ]
+            },
+            { name: 'derivativeName', label: 'Derivative Name', type: 'text', required: true, placeholder: 'e.g., Nifty09Jan23600P' },
+            {
+                name: 'derivativeType', label: 'Derivative Type', type: 'select', required: true, options: [
+                    { value: 'OPT', label: 'Option' },
+                    { value: 'FUT', label: 'Futures' },
+                ]
+            },
+            {
+                name: 'derivativeOptionType', label: 'Option Type', type: 'select', options: [
+                    { value: 'CE', label: 'Call (CE)' },
+                    { value: 'PE', label: 'Put (PE)' },
+                ]
+            },
+            { name: 'derivativeOptionStrikePrice', label: 'Strike Price', type: 'text', required: true, placeholder: '23600' },
+            { name: 'derivativeExpiryDt', label: 'Expiry Date', type: 'date', required: true },
+            { name: 'derivativeQuantity', label: 'Quantity', type: 'number', required: true, placeholder: '1' },
+            { name: 'derivativeLotSize', label: 'Lot Size', type: 'number', required: true, placeholder: '75' },
+            { name: 'derivativeEntryDttm', label: 'Entry Date/Time', type: 'datetime', required: true },
+            { name: 'derivativeEntryPrice', label: 'Entry Price (₹)', type: 'number', required: true },
+            { name: 'derivativeTargetPrice', label: 'Target Price (₹)', type: 'number', required: true },
+            { name: 'derivativeStopLoss', label: 'Stop Loss (₹)', type: 'number', required: true },
+            { name: 'derivativeTotalMargin', label: 'Total Margin (₹)', type: 'number', required: true },
         ],
     },
     singlestock: {
         title: 'Single Stock Advice',
-        description: 'Submit recommendations for individual stocks',
+        description: 'Submit short-term stock recommendations',
         isArray: true,
-        fields: [
-            { name: 'pan', label: 'Client PAN', type: 'text', required: true, placeholder: 'ABCDE1234F' },
-            { name: 'symbol', label: 'Stock Symbol', type: 'text', required: true, placeholder: 'e.g., RELIANCE' },
-            { name: 'series', label: 'Series', type: 'text', required: true, placeholder: 'EQ' },
+        mainFields: [
+            { name: 'adviceName', label: 'Advice Name', type: 'text', required: true, placeholder: 'e.g., HONDAPOWER01' },
             {
-                name: 'advice', label: 'Recommendation', type: 'select', required: true, options: [
-                    { value: 'BUY', label: 'Buy' },
-                    { value: 'SELL', label: 'Sell' },
-                    { value: 'HOLD', label: 'Hold' },
+                name: 'exchange', label: 'Exchange', type: 'select', required: true, options: [
+                    { value: 'NSE', label: 'NSE' },
+                    { value: 'BSE', label: 'BSE' },
                 ]
             },
-            { name: 'targetPrice', label: 'Target Price (₹)', type: 'number', required: true },
-            { name: 'stopLoss', label: 'Stop Loss (₹)', type: 'number', placeholder: 'Optional' },
-            { name: 'adviceDate', label: 'Advice Date', type: 'date', required: true },
-            { name: 'validTill', label: 'Valid Till', type: 'date', required: true },
+            {
+                name: 'shortTermRecommendationType', label: 'Recommendation', type: 'select', required: true, options: [
+                    { value: 'BUY', label: 'Buy' },
+                    { value: 'SELL', label: 'Sell' },
+                ]
+            },
+            { name: 'shortTermStockName', label: 'Stock Name', type: 'text', required: true, placeholder: 'e.g., HONDAPOWER' },
+            { name: 'shortTermIsin', label: 'ISIN', type: 'text', required: true, placeholder: 'e.g., INE634A01018' },
+            { name: 'shortTermHorizon', label: 'Horizon (Days)', type: 'number', required: true, placeholder: '30' },
+            { name: 'shortTermEntryDt', label: 'Entry Date/Time', type: 'datetime', required: true },
+            { name: 'shortTermEntryPrice', label: 'Entry Price (₹)', type: 'number', required: true },
+            { name: 'shortTermTargetPrice', label: 'Target Price (₹)', type: 'number', required: true },
+            { name: 'shortTermSlPrice', label: 'Stop Loss Price (₹)', type: 'number', required: true },
         ],
     },
     portfolio: {
         title: 'Portfolio Advice',
-        description: 'Submit portfolio-level recommendations',
+        description: 'Submit model portfolio recommendations',
         isArray: true,
-        fields: [
-            { name: 'pan', label: 'Client PAN', type: 'text', required: true, placeholder: 'ABCDE1234F' },
-            { name: 'portfolioName', label: 'Portfolio Name', type: 'text', required: true },
+        hasNestedArray: true,
+        nestedArrayName: 'details',
+        mainFields: [
+            { name: 'portfolioName', label: 'Portfolio Name', type: 'text', required: true, placeholder: 'e.g., PortfolioTest1' },
             {
-                name: 'action', label: 'Action', type: 'select', required: true, options: [
-                    { value: 'REBALANCE', label: 'Rebalance' },
-                    { value: 'ENTRY', label: 'Entry' },
-                    { value: 'EXIT', label: 'Exit' },
+                name: 'portfolioType', label: 'Portfolio Type', type: 'select', required: true, options: [
+                    { value: 'Equity', label: 'Equity' },
+                    { value: 'Debt', label: 'Debt' },
+                    { value: 'Hybrid', label: 'Hybrid' },
                 ]
             },
-            { name: 'allocationPercentage', label: 'Allocation %', type: 'number', required: true, placeholder: '0-100' },
-            { name: 'adviceDate', label: 'Advice Date', type: 'date', required: true },
-            { name: 'remarks', label: 'Remarks', type: 'text', placeholder: 'Optional remarks' },
+            {
+                name: 'stopPortfolio', label: 'Stop Portfolio?', type: 'select', required: true, options: [
+                    { value: 'No', label: 'No' },
+                    { value: 'Yes', label: 'Yes' },
+                ]
+            },
+        ],
+        nestedFields: [
+            { name: 'securityName', label: 'Security Name', type: 'text', required: true, placeholder: 'e.g., SENCO' },
+            { name: 'isinNo', label: 'ISIN Number', type: 'text', required: true, placeholder: 'e.g., INE602W01027' },
+            {
+                name: 'exchange', label: 'Exchange', type: 'select', required: true, options: [
+                    { value: 'NSE', label: 'NSE' },
+                    { value: 'BSE', label: 'BSE' },
+                ]
+            },
+            { name: 'weightage', label: 'Weightage (0-1)', type: 'number', required: true, placeholder: '0.25', hint: 'Enter value between 0 and 1' },
+            {
+                name: 'isMutualFund', label: 'Is Mutual Fund?', type: 'select', required: true, options: [
+                    { value: 'N', label: 'No' },
+                    { value: 'Y', label: 'Yes' },
+                ]
+            },
         ],
     },
     intraday: {
         title: 'Intraday Advice',
-        description: 'Submit same-day trading recommendations',
+        description: 'Submit intraday/technical call recommendations',
         isArray: true,
-        fields: [
-            { name: 'pan', label: 'Client PAN', type: 'text', required: true, placeholder: 'ABCDE1234F' },
-            { name: 'symbol', label: 'Stock Symbol', type: 'text', required: true, placeholder: 'e.g., NIFTY' },
+        mainFields: [
+            { name: 'adviceName', label: 'Advice Name', type: 'text', required: true, placeholder: 'e.g., HINDUNILVR01' },
+            { name: 'techCallId', label: 'Technical Call ID', type: 'text', required: true, placeholder: 'e.g., HINDUNILVR' },
             {
-                name: 'advice', label: 'Direction', type: 'select', required: true, options: [
-                    { value: 'LONG', label: 'Long (Buy)' },
-                    { value: 'SHORT', label: 'Short (Sell)' },
+                name: 'exchange', label: 'Exchange', type: 'select', required: true, options: [
+                    { value: 'NSE', label: 'NSE' },
+                    { value: 'BSE', label: 'BSE' },
                 ]
             },
-            { name: 'entryPrice', label: 'Entry Price (₹)', type: 'number', required: true },
-            { name: 'targetPrice', label: 'Target Price (₹)', type: 'number', required: true },
-            { name: 'stopLoss', label: 'Stop Loss (₹)', type: 'number', required: true },
-            { name: 'quantity', label: 'Quantity', type: 'number', required: true },
-            { name: 'adviceTime', label: 'Advice Time', type: 'datetime', required: true },
+            {
+                name: 'techCallType', label: 'Call Type', type: 'select', required: true, options: [
+                    { value: 'BUY', label: 'Buy' },
+                    { value: 'SELL', label: 'Sell' },
+                ]
+            },
+            { name: 'isin', label: 'ISIN', type: 'text', required: true, placeholder: 'e.g., INE030A01027' },
+            { name: 'securityEntryDt', label: 'Entry Date/Time', type: 'datetime', required: true },
+            { name: 'techCallEntryPrice', label: 'Entry Price (₹)', type: 'number', required: true },
+            { name: 'techCallTargetPrice', label: 'Target Price (₹)', type: 'number', required: true },
+            { name: 'techCallStopLoss', label: 'Stop Loss (₹)', type: 'number', required: true },
+            { name: 'techCallExitDate', label: 'Exit Date/Time', type: 'datetime' },
+            { name: 'techCallExitPrice', label: 'Exit Price (₹)', type: 'number' },
+            { name: 'note', label: 'Note', type: 'text', placeholder: 'Optional notes' },
         ],
     },
     derivative: {
         title: 'Derivative Advice',
         description: 'Submit derivatives trading recommendations',
         isArray: true,
-        fields: [
-            { name: 'pan', label: 'Client PAN', type: 'text', required: true, placeholder: 'ABCDE1234F' },
-            { name: 'symbol', label: 'Underlying', type: 'text', required: true, placeholder: 'e.g., NIFTY' },
+        mainFields: [
+            { name: 'adviceName', label: 'Advice Name', type: 'text', required: true, placeholder: 'e.g., AXISBANK001' },
             {
-                name: 'optionType', label: 'Option Type', type: 'select', required: true, options: [
-                    { value: 'CE', label: 'Call (CE)' },
-                    { value: 'PE', label: 'Put (PE)' },
-                    { value: 'FUT', label: 'Futures' },
+                name: 'exchange', label: 'Exchange', type: 'select', required: true, options: [
+                    { value: 'NSE', label: 'NSE' },
+                    { value: 'BSE', label: 'BSE' },
                 ]
             },
-            { name: 'strikePrice', label: 'Strike Price', type: 'number', required: true },
-            { name: 'expiryDate', label: 'Expiry Date', type: 'date', required: true },
             {
-                name: 'advice', label: 'Action', type: 'select', required: true, options: [
+                name: 'recommendationType', label: 'Recommendation', type: 'select', required: true, options: [
                     { value: 'BUY', label: 'Buy' },
                     { value: 'SELL', label: 'Sell' },
                 ]
             },
-            { name: 'lots', label: 'No. of Lots', type: 'number', required: true },
-            { name: 'targetPrice', label: 'Target Premium (₹)', type: 'number', required: true },
+            { name: 'derivativeName', label: 'Derivative Name', type: 'text', required: true, placeholder: 'e.g., ADANIENT' },
+            {
+                name: 'derivativeType', label: 'Derivative Type', type: 'select', required: true, options: [
+                    { value: 'OPT', label: 'Option' },
+                    { value: 'FUT', label: 'Futures' },
+                ]
+            },
+            {
+                name: 'derivativeOptionType', label: 'Option Type', type: 'select', options: [
+                    { value: 'CE', label: 'Call (CE)' },
+                    { value: 'PE', label: 'Put (PE)' },
+                ]
+            },
+            { name: 'derivativeOptionStrikePrice', label: 'Strike Price', type: 'text', required: true, placeholder: '2500' },
+            { name: 'derivativeExpiryDt', label: 'Expiry Date', type: 'date', required: true },
+            { name: 'derivativeEntryDttm', label: 'Entry Date/Time', type: 'datetime', required: true },
+            { name: 'derivativeEntryPrice', label: 'Entry Price (₹)', type: 'number', required: true },
+            { name: 'derivativeQuantity', label: 'Quantity', type: 'number', required: true, placeholder: '1' },
+            { name: 'derivativeTargetPrice', label: 'Target Price (₹)', type: 'number', required: true },
+            { name: 'derivativeStopLoss', label: 'Stop Loss (₹)', type: 'number', required: true },
+            { name: 'derivativeTotalMargin', label: 'Total Margin (₹)', type: 'number', required: true },
+            {
+                name: 'isIntraday', label: 'Is Intraday?', type: 'select', required: true, options: [
+                    { value: 'Yes', label: 'Yes' },
+                    { value: 'No', label: 'No' },
+                ]
+            },
         ],
     },
     algoinput: {
         title: 'Algo Input',
-        description: 'Submit algorithmic trading inputs',
+        description: 'Submit algorithmic trading inputs (TMS)',
         isArray: true,
-        fields: [
-            { name: 'algoId', label: 'Algorithm ID', type: 'text', required: true },
-            { name: 'symbol', label: 'Symbol', type: 'text', required: true },
-            { name: 'quantity', label: 'Quantity', type: 'number', required: true },
+        mainFields: [
             {
-                name: 'orderType', label: 'Order Type', type: 'select', required: true, options: [
-                    { value: 'MARKET', label: 'Market' },
-                    { value: 'LIMIT', label: 'Limit' },
+                name: 'exchange', label: 'Exchange', type: 'select', required: true, options: [
+                    { value: 'NSE', label: 'NSE' },
+                    { value: 'BSE', label: 'BSE' },
                 ]
             },
-            { name: 'price', label: 'Limit Price (₹)', type: 'number', placeholder: 'Required for limit orders' },
-            { name: 'triggerTime', label: 'Trigger Time', type: 'datetime', required: true },
+            { name: 'tradingMember', label: 'Trading Member', type: 'text', required: true, placeholder: 'e.g., 118999' },
+            { name: 'algoId', label: 'Algorithm ID', type: 'text', required: true, placeholder: 'e.g., 695399' },
+            { name: 'uniqueClientCode', label: 'Unique Client Code', type: 'text', required: true, placeholder: 'e.g., MKS099' },
+            {
+                name: 'segment', label: 'Segment', type: 'select', required: true, options: [
+                    { value: 'CM', label: 'Cash Market (CM)' },
+                    { value: 'FO', label: 'F&O (FO)' },
+                ]
+            },
+            { name: 'fixedCapital', label: 'Fixed Capital (₹)', type: 'number', required: true, placeholder: 'e.g., 19520940' },
         ],
     },
 };
+
 
 export function AdvicePage() {
     const navigate = useNavigate();
@@ -166,6 +278,8 @@ export function AdvicePage() {
             </AppLayout>
         );
     }
+
+    const [debugInfo, setDebugInfo] = useState<{ plainText: string; encrypted: string } | null>(null);
 
     const addItem = () => {
         setItems([...items, {}]);
@@ -195,6 +309,12 @@ export function AdvicePage() {
             // Prepare encrypted payload
             const payload = formConfig.isArray ? items : items[0];
             const encryptedPayload = await prepareEncryptedPayload(payload, dataPublicKey, formConfig.isArray ? 'array' : 'object');
+
+            // Store debug info
+            setDebugInfo({
+                plainText: JSON.stringify(payload, null, 2),
+                encrypted: JSON.stringify(encryptedPayload, null, 2)
+            });
 
             console.log('Sending advice to proxy:', proxyPath);
             console.log('Payload:', payload);
@@ -282,7 +402,7 @@ export function AdvicePage() {
                             )}
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {formConfig.fields.map((field) => (
+                                {formConfig.mainFields.map((field) => (
                                     <div key={field.name} className={`form-group ${field.name === 'remarks' ? 'sm:col-span-2' : ''}`}>
                                         <label className="label">
                                             {field.label}
@@ -365,6 +485,24 @@ export function AdvicePage() {
                         )}
                     </button>
                 </form>
+
+                {/* Debug Info */}
+                {debugInfo && (
+                    <div className="mt-8 space-y-4">
+                        <div className="card p-4 bg-gray-50 border border-gray-200">
+                            <h3 className="font-semibold text-gray-700 mb-2 flex items-center">
+                                <span className="mr-2">📝</span> Plain Text Payload
+                            </h3>
+                            <pre className="bg-white p-3 rounded text-xs overflow-x-auto text-gray-800 border border-gray-100">{debugInfo.plainText}</pre>
+                        </div>
+                        <div className="card p-4 bg-gray-50 border border-gray-200">
+                            <h3 className="font-semibold text-gray-700 mb-2 flex items-center">
+                                <span className="mr-2">🔐</span> Encrypted JWE Payload
+                            </h3>
+                            <pre className="bg-white p-3 rounded text-xs overflow-x-auto text-gray-800 max-h-40 overflow-y-auto border border-gray-100">{debugInfo.encrypted}</pre>
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );
